@@ -1,52 +1,40 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Scale, Tag, Hash, ChevronLeft, Save, Star } from 'lucide-react-native';
+import { StyleSheet, View, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { Text, Card, Button, TextInput, List, useTheme, Avatar, IconButton } from 'react-native-paper';
 import { supabase } from '../../supabase';
-import { Theme } from '../theme';
 
-const DetailItem = ({ label, value, icon: Icon, color = Theme.colors.primary, isEditing, onChangeText }: any) => {
-  return (
-    <View style={styles.detailCard}>
-      <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
-        <Icon size={24} color={color} />
-      </View>
-      <View style={styles.textContainer}>
-        <Text style={styles.label}>{label}</Text>
-        {isEditing ? (
-          <TextInput
-            style={styles.input}
-            value={value.toString()}
-            onChangeText={onChangeText}
-            keyboardType="numeric"
-            autoFocus
-          />
-        ) : (
-          <Text style={styles.value}>{value || '0.000'}</Text>
-        )}
-      </View>
-    </View>
-  );
-};
-
-export default function DetailScreen({ route, navigation }: any) {
+const DetailScreen = ({ route, navigation }: any) => {
   const { item: initialItem } = route.params;
   const [item, setItem] = useState(initialItem);
   const [newWeight, setNewWeight] = useState(initialItem.weight_with_tag?.toString() || '0');
+  const [remarkedWeight, setRemarkedWeight] = useState(initialItem.remarked_weight?.toString() || '');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isRemarking, setIsRemarking] = useState(false);
+  const theme = useTheme();
 
-  const handleUpdateWeight = async () => {
-    if (isNaN(parseFloat(newWeight))) {
-      Alert.alert("Error", "Please enter a valid number for weight.");
-      return;
-    }
-
+  const handleSaveAll = async () => {
     setIsUpdating(true);
     try {
-      const weightValue = parseFloat(newWeight);
+      const updates: any = {
+        weight_with_tag: parseFloat(newWeight) || 0,
+        is_remarked: item.is_remarked,
+      };
+
+      if (item.is_remarked) {
+        if (!remarkedWeight || isNaN(parseFloat(remarkedWeight))) {
+          Alert.alert("Error", "Please enter a valid remarked weight.");
+          setIsUpdating(false);
+          return;
+        }
+        updates.remarked_weight = parseFloat(remarkedWeight);
+        updates.remarked_at = new Date().toISOString();
+      } else {
+        updates.remarked_weight = null;
+        updates.remarked_at = null;
+      }
+
       const { data, error } = await supabase
         .from('items')
-        .update({ weight_with_tag: weightValue })
+        .update(updates)
         .eq('id', item.id)
         .select()
         .single();
@@ -54,7 +42,7 @@ export default function DetailScreen({ route, navigation }: any) {
       if (error) throw error;
 
       setItem(data);
-      Alert.alert("Success", "Weight updated successfully!");
+      Alert.alert("Success", "Product details updated successfully!");
     } catch (error: any) {
       Alert.alert("Error", error.message);
     } finally {
@@ -62,239 +50,125 @@ export default function DetailScreen({ route, navigation }: any) {
     }
   };
 
-  const toggleRemark = async () => {
-    setIsRemarking(true);
-    try {
-      const { data, error } = await supabase
-        .from('items')
-        .update({ is_remarked: !item.is_remarked })
-        .eq('id', item.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setItem(data);
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setIsRemarking(false);
-    }
+  const toggleRemarkStatus = () => {
+    setItem({ ...item, is_remarked: !item.is_remarked });
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{item.name || 'Product Details'}</Text>
-          <Text style={styles.subtitle}>{item.description || 'No description available'}</Text>
-        </View>
-
-        <View style={styles.detailsGrid}>
-          <View style={styles.topRow}>
-            <DetailItem 
-              label="SKU / Label No" 
-              value={item.sku || item.label_no} 
-              icon={Hash} 
-              color="#3b82f6" 
+        <Card style={styles.headerCard}>
+          <Card.Content style={styles.center}>
+            <Avatar.Icon 
+              size={64} 
+              icon="tag-outline" 
+              style={{ backgroundColor: theme.colors.primaryContainer }} 
+              color={theme.colors.onPrimaryContainer} 
             />
-            <TouchableOpacity 
-              style={[styles.remarkButton, item.is_remarked && styles.remarkActive]} 
-              onPress={toggleRemark}
-              disabled={isRemarking}
-            >
-              {isRemarking ? (
-                <ActivityIndicator size="small" color={item.is_remarked ? "#fff" : "#fbbf24"} />
-              ) : (
-                <Star size={24} color={item.is_remarked ? "#fff" : "#fbbf24"} fill={item.is_remarked ? "#fff" : "transparent"} />
+            <Text variant="headlineMedium" style={styles.title}>{item.name || 'Product Details'}</Text>
+            <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>{item.description || 'No description available'}</Text>
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.detailsCard}>
+          <Card.Content>
+            <List.Item
+              title="SKU / Label No"
+              description={item.sku || item.label_no}
+              left={(props: any) => <List.Icon {...props} icon="identifier" />}
+              right={() => (
+                <IconButton
+                  icon={item.is_remarked ? "star" : "star-outline"}
+                  iconColor={item.is_remarked ? "#FBBF24" : theme.colors.outline}
+                  onPress={toggleRemarkStatus}
+                />
               )}
-              <Text style={[styles.remarkText, item.is_remarked && { color: '#fff' }]}>
-                {item.is_remarked ? "Remarked" : "Remark"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <DetailItem 
-            label="Gross Weight" 
-            value={`${item.gross_wt || '0.000'} g`} 
-            icon={Scale} 
-            color="#8b5cf6" 
-          />
-          
-          <DetailItem 
-            label="Net Weight" 
-            value={`${item.net_wt || '0.000'} g`} 
-            icon={Scale} 
-            color="#6366f1" 
-          />
-          
-          <View style={styles.updateSection}>
-            <View style={styles.detailCard}>
-              <View style={[styles.iconContainer, { backgroundColor: `#ec489915` }]}>
-                <Tag size={24} color="#ec4899" />
-              </View>
-              <View style={styles.textContainer}>
-                <Text style={styles.label}>Weight with Tag</Text>
+            />
+            <List.Item
+              title="Location"
+              description={item.location || 'N/A'}
+              left={(props: any) => <List.Icon {...props} icon="map-marker" />}
+            />
+            <List.Item
+              title="Gross Weight"
+              description={`${item.gross_wt || '0.000'} g`}
+              left={(props: any) => <List.Icon {...props} icon="scale" />}
+            />
+            <List.Item
+              title="Net Weight"
+              description={`${item.net_wt || '0.000'} g`}
+              left={(props: any) => <List.Icon {...props} icon="scale-balance" />}
+            />
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.inputCard}>
+          <Card.Content>
+            <TextInput
+              label="Weight with Tag"
+              value={newWeight}
+              onChangeText={setNewWeight}
+              keyboardType="numeric"
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="weight-gram" />}
+            />
+
+            {item.is_remarked && (
+              <View style={styles.remarkSection}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>Verification & Remarks</Text>
                 <TextInput
-                  style={styles.input}
-                  value={newWeight}
-                  onChangeText={setNewWeight}
+                  label="Remarked Weight"
+                  value={remarkedWeight}
+                  onChangeText={setRemarkedWeight}
                   keyboardType="numeric"
-                  placeholder="Enter weight"
-                  placeholderTextColor={Theme.colors.text.muted}
+                  mode="outlined"
+                  style={styles.input}
+                  left={<TextInput.Icon icon="alert-circle-outline" />}
+                  placeholder="Enter mistake weight"
                 />
               </View>
-            </View>
-            
-            <TouchableOpacity 
-              style={[styles.updateButton, isUpdating && { opacity: 0.7 }]} 
-              onPress={handleUpdateWeight}
-              disabled={isUpdating}
-            >
-              {isUpdating ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Save size={20} color="#fff" />
-                  <Text style={styles.updateButtonText}>Update Weight</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+            )}
 
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <ChevronLeft size={20} color="#fff" />
-          <Text style={styles.backButtonText}>Scan Another</Text>
-        </TouchableOpacity>
+            <Button 
+              mode="contained" 
+              icon="content-save" 
+              onPress={handleSaveAll}
+              loading={isUpdating}
+              disabled={isUpdating}
+              style={styles.saveButton}
+            >
+              Save Changes
+            </Button>
+
+            <Button 
+              mode="outlined" 
+              icon="barcode-scan" 
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              Scan Another
+            </Button>
+          </Card.Content>
+        </Card>
       </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Theme.colors.background,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    marginBottom: 30,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Theme.colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: Theme.colors.text.secondary,
-    textAlign: 'center',
-  },
-  detailsGrid: {
-    gap: 16,
-  },
-  topRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  detailCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Theme.colors.surface,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  remarkButton: {
-    width: 100,
-    backgroundColor: Theme.colors.surface,
-    borderRadius: 20,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#fbbf24',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-  },
-  remarkActive: {
-    backgroundColor: '#fbbf24',
-  },
-  remarkText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#fbbf24',
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  label: {
-    fontSize: 14,
-    color: Theme.colors.text.secondary,
-    marginBottom: 4,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  value: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.colors.text.primary,
-  },
-  input: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.colors.text.primary,
-    padding: 0,
-  },
-  updateSection: {
-    gap: 12,
-  },
-  updateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.colors.secondary,
-    paddingVertical: 15,
-    borderRadius: 16,
-    gap: 8,
-  },
-  updateButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.colors.primary,
-    marginTop: 30,
-    paddingVertical: 18,
-    borderRadius: 16,
-    gap: 8,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
+  container: { flex: 1 },
+  scrollContent: { padding: 20, maxWidth: 800, alignSelf: 'center', width: '100%', flexGrow: 1 },
+  headerCard: { marginBottom: 15, elevation: 1 },
+  detailsCard: { marginBottom: 15, elevation: 1 },
+  inputCard: { marginBottom: 25, elevation: 2 },
+  center: { alignItems: 'center', paddingVertical: 10 },
+  title: { fontWeight: 'bold', marginTop: 10, textAlign: 'center' },
+  input: { marginBottom: 15 },
+  remarkSection: { marginTop: 10, marginBottom: 15 },
+  sectionTitle: { marginBottom: 10, fontWeight: 'bold' },
+  saveButton: { marginTop: 10, paddingVertical: 4 },
+  backButton: { marginTop: 15 },
 });
+
+export default DetailScreen;

@@ -33,7 +33,8 @@
         {
           "cameraPermission": "Allow kishore_sir_tag_price to access your camera"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

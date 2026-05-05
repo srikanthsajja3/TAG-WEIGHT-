@@ -1,15 +1,18 @@
 export const Theme = {
   colors: {
-    primary: '#6366f1',
-    secondary: '#8b5cf6',
-    background: '#0f172a',
-    surface: '#1e293b',
-    border: '#334155',
+    primary: '#4f46e5', // Bright Indigo
+    secondary: '#7c3aed', // Purple
+    success: '#10b981', // Emerald
+    warning: '#f59e0b', // Amber
+    danger: '#ef4444', // Red
+    background: '#f8fafc', // Very Light Gray/Blue
+    surface: '#ffffff', // White
+    border: '#e2e8f0', // Light Gray Border
     text: {
-      primary: '#f8fafc',
-      secondary: '#94a3b8',
-      muted: '#64748b',
-      black: '#000000',
+      primary: '#0f172a', // Dark Navy
+      secondary: '#475569', // Slate Gray
+      muted: '#94a3b8', // Light Slate
+      white: '#ffffff',
     },
   },
 };
