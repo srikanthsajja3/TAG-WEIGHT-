@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
-import { Text, Card, Button, TextInput, List, useTheme, Avatar, IconButton } from 'react-native-paper';
+import { StyleSheet, View, ScrollView, Alert, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
+import { Text, Card, Button, TextInput, List, useTheme, Avatar, IconButton, RadioButton } from 'react-native-paper';
 import { supabase } from '../../supabase';
 
 const DetailScreen = ({ route, navigation }: any) => {
   const { item: initialItem } = route.params;
   const [item, setItem] = useState(initialItem);
   const [newWeight, setNewWeight] = useState(initialItem.weight_with_tag?.toString() || '0');
-  const [numberOfTags, setNumberOfTags] = useState(initialItem.number_of_tags?.toString() || '1');
+  const [numberOfTags, setNumberOfTags] = useState(() => {
+    const hasBeenWeighed = initialItem.weight_with_tag && parseFloat(initialItem.weight_with_tag) > 0;
+    return hasBeenWeighed ? (initialItem.number_of_tags?.toString() || '2') : '2';
+  });
   const [remarkedWeight, setRemarkedWeight] = useState(initialItem.remarked_weight?.toString() || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const theme = useTheme();
@@ -123,15 +126,38 @@ const DetailScreen = ({ route, navigation }: any) => {
               left={<TextInput.Icon icon="weight-gram" />}
             />
 
-            <TextInput
-              label="Number of Tags"
-              value={numberOfTags}
-              onChangeText={setNumberOfTags}
-              keyboardType="numeric"
-              mode="outlined"
-              style={styles.input}
-              left={<TextInput.Icon icon="tag-outline" />}
-            />
+            <View style={styles.radioContainer}>
+              <Text variant="bodyMedium" style={[styles.radioTitle, { color: theme.colors.onSurfaceVariant }]}>
+                Number of Tags
+              </Text>
+              <RadioButton.Group onValueChange={value => setNumberOfTags(value)} value={numberOfTags}>
+                <View style={styles.radioRow}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.radioOption, 
+                      { borderColor: numberOfTags === '1' ? theme.colors.primary : theme.colors.outline },
+                      numberOfTags === '1' && { backgroundColor: theme.colors.primaryContainer + '15' }
+                    ]} 
+                    onPress={() => setNumberOfTags('1')}
+                  >
+                    <RadioButton.Android value="1" color={theme.colors.primary} />
+                    <Text variant="bodyLarge" style={[styles.radioLabel, { color: theme.colors.onSurface }]}>1 Tag</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[
+                      styles.radioOption, 
+                      { borderColor: numberOfTags === '2' ? theme.colors.primary : theme.colors.outline },
+                      numberOfTags === '2' && { backgroundColor: theme.colors.primaryContainer + '15' }
+                    ]} 
+                    onPress={() => setNumberOfTags('2')}
+                  >
+                    <RadioButton.Android value="2" color={theme.colors.primary} />
+                    <Text variant="bodyLarge" style={[styles.radioLabel, { color: theme.colors.onSurface }]}>2 Tags</Text>
+                  </TouchableOpacity>
+                </View>
+              </RadioButton.Group>
+            </View>
 
             {item.is_remarked && (
               <View style={styles.remarkSection}>
@@ -188,6 +214,31 @@ const styles = StyleSheet.create({
   sectionTitle: { marginBottom: 10, fontWeight: 'bold' },
   saveButton: { marginTop: 10, paddingVertical: 4 },
   backButton: { marginTop: 15 },
+  radioContainer: {
+    marginBottom: 20,
+    marginTop: 5,
+  },
+  radioTitle: {
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  radioRow: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  radioOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  radioLabel: {
+    marginLeft: 8,
+    fontWeight: '600',
+  },
 });
 
 export default DetailScreen;
