@@ -90,7 +90,7 @@ const ScanScreen = ({ navigation }: any) => {
 
       const { data, error } = await supabase
         .from('items')
-        .select('sku, net_wt, gross_wt, weight_with_tag, location, remarked_weight, remarked_at')
+        .select('sku, net_wt, gross_wt, weight_with_tag, number_of_tags, location, remarked_weight, remarked_at')
         .eq('is_remarked', true)
         .gte('remarked_at', startOfDay.toISOString())
         .lte('remarked_at', endOfDay.toISOString());
@@ -102,10 +102,10 @@ const ScanScreen = ({ navigation }: any) => {
         return;
       }
 
-      const header = "SKU,Net Wt,Gross Wt,Tag Wt,Location,Remark Date Time,Remarked Weight\n";
+      const header = "SKU,Net Wt,Gross Wt,Tag Wt,Number of Tags,Location,Remark Date Time,Remarked Weight\n";
       const rows = data.map(item => {
         const dateTime = item.remarked_at ? new Date(item.remarked_at).toLocaleString() : 'N/A';
-        return `"${item.sku || ''}","${item.net_wt || 0}","${item.gross_wt || 0}","${item.weight_with_tag || 0}","${item.location || ''}","${dateTime}","${item.remarked_weight || 0}"`;
+        return `"${item.sku || ''}","${item.net_wt || 0}","${item.gross_wt || 0}","${item.weight_with_tag || 0}","${item.number_of_tags || 1}","${item.location || ''}","${dateTime}","${item.remarked_weight || 0}"`;
       }).join("\n");
       const csvContent = header + rows;
 

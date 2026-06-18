@@ -22,7 +22,7 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 
 const CombinedDefaultTheme = {
   ...MD3LightTheme,
-  version: 3,
+  version: 3 as const,
   colors: {
     ...MD3LightTheme.colors,
     ...LightTheme.colors,
@@ -32,7 +32,7 @@ const CombinedDefaultTheme = {
 
 const CombinedDarkTheme = {
   ...MD3DarkTheme,
-  version: 3,
+  version: 3 as const,
   colors: {
     ...MD3DarkTheme.colors,
     ...DarkTheme.colors,
@@ -49,8 +49,8 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <PaperProvider theme={theme}>
-          <NavigationContainer theme={theme}>
+        <PaperProvider theme={theme as any}>
+          <NavigationContainer theme={theme as any}>
             <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
             <Stack.Navigator 
               initialRouteName="Scan"

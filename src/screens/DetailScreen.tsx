@@ -7,6 +7,7 @@ const DetailScreen = ({ route, navigation }: any) => {
   const { item: initialItem } = route.params;
   const [item, setItem] = useState(initialItem);
   const [newWeight, setNewWeight] = useState(initialItem.weight_with_tag?.toString() || '0');
+  const [numberOfTags, setNumberOfTags] = useState(initialItem.number_of_tags?.toString() || '1');
   const [remarkedWeight, setRemarkedWeight] = useState(initialItem.remarked_weight?.toString() || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const theme = useTheme();
@@ -14,8 +15,16 @@ const DetailScreen = ({ route, navigation }: any) => {
   const handleSaveAll = async () => {
     setIsUpdating(true);
     try {
+      const tagsCount = parseInt(numberOfTags, 10);
+      if (isNaN(tagsCount) || tagsCount < 0) {
+        Alert.alert("Error", "Please enter a valid number of tags.");
+        setIsUpdating(false);
+        return;
+      }
+
       const updates: any = {
         weight_with_tag: parseFloat(newWeight) || 0,
+        number_of_tags: tagsCount,
         is_remarked: item.is_remarked,
       };
 
@@ -112,6 +121,16 @@ const DetailScreen = ({ route, navigation }: any) => {
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="weight-gram" />}
+            />
+
+            <TextInput
+              label="Number of Tags"
+              value={numberOfTags}
+              onChangeText={setNumberOfTags}
+              keyboardType="numeric"
+              mode="outlined"
+              style={styles.input}
+              left={<TextInput.Icon icon="tag-outline" />}
             />
 
             {item.is_remarked && (
